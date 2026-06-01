@@ -51,6 +51,17 @@ pytest
 - `POST /emails/{email_id}/send`
 - `POST /meetings/schedule`
 
+## Google OAuth setup
+
+To connect a real Gmail account, create a Google Cloud OAuth client for a Web application and set:
+
+- GOOGLE_CLIENT_ID
+- GOOGLE_CLIENT_SECRET
+- GOOGLE_REDIRECT_URI=http://localhost:8000/auth/google/callback
+- GOOGLE_SCOPES=https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/calendar.events
+
+The app is currently scaffolded to generate the Google authorization URL, but it still uses the in-memory demo email provider until the Gmail adapter is added.
+
 ## Next steps for real email access
 
 Recommended production path:
