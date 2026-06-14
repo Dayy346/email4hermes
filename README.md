@@ -59,8 +59,26 @@ To connect a real Gmail account, create a Google Cloud OAuth client for a Web ap
 - GOOGLE_CLIENT_SECRET
 - GOOGLE_REDIRECT_URI=http://localhost:8000/auth/google/callback
 - GOOGLE_SCOPES=https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/calendar.events
+- GOOGLE_REFRESH_TOKEN once the account has authorized the app
+- GOOGLE_ACCOUNT_EMAIL if you want the app to display the mailbox owner explicitly
+
+Useful status endpoints:
+
+- `GET /auth/google/status` — shows whether OAuth + handoff fields are ready
+- `GET /auth/google/url` — returns the Google authorization URL when config is present
 
 The app is currently scaffolded to generate the Google authorization URL, but it still uses the in-memory demo email provider until the Gmail adapter is added.
+
+## Handoff checklist
+
+Before I can manage the real mailbox, I need these values in `.env` or another secret store:
+
+1. `GOOGLE_CLIENT_ID`
+2. `GOOGLE_CLIENT_SECRET`
+3. `GOOGLE_REDIRECT_URI`
+4. `GOOGLE_REFRESH_TOKEN`
+5. `GOOGLE_ACCOUNT_EMAIL` (optional but helpful)
+6. `GOOGLE_SCOPES` if you want to customize access
 
 ## Next steps for real email access
 

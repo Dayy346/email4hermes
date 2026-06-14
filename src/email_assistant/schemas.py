@@ -4,6 +4,25 @@ from typing import Literal
 from pydantic import BaseModel, Field
 
 
+class GoogleOAuthStatusResponse(BaseModel):
+    ready: bool
+    handoff_ready: bool
+    missing_fields: list[str]
+    client_id: str | None = None
+    redirect_uri: str | None = None
+    scopes: list[str]
+    authorization_url: str | None = None
+
+
+class GoogleOAuthTokenResponse(BaseModel):
+    access_token: str | None = None
+    expires_in: int | None = None
+    refresh_token: str | None = None
+    scope: str | None = None
+    token_type: str | None = None
+    raw: dict[str, object] | None = None
+
+
 class EmailMessage(BaseModel):
     id: str
     sender: str
