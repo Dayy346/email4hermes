@@ -1,4 +1,5 @@
 from functools import lru_cache
+import sys
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -21,8 +22,13 @@ class Settings(BaseSettings):
     google_account_email: str | None = None
     google_refresh_token: str | None = None
     google_token_uri: str = "https://oauth2.googleapis.com/token"
+    email_backend: str = "demo"
 
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+    model_config = SettingsConfigDict(
+        env_file=None if "pytest" in sys.argv[0].lower() else ".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
 
     @property
     def google_scope_list(self) -> list[str]:
