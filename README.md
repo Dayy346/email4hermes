@@ -67,7 +67,7 @@ Useful status endpoints:
 - `GET /auth/google/status` — shows whether OAuth + handoff fields are ready
 - `GET /auth/google/url` — returns the Google authorization URL when config is present
 
-The app is currently scaffolded to generate the Google authorization URL, but it still uses the in-memory demo email provider until the Gmail adapter is added.
+The app is currently scaffolded to generate the Google authorization URL, and it switches to the Gmail-backed provider when `EMAIL_BACKEND=gmail` and the Google handoff fields are present.
 
 ## Handoff checklist
 
