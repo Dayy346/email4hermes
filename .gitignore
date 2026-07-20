@@ -9,3 +9,5 @@ dist/
 *.pyc
 
 *.egg-info/
+output/*
+!output/.gitkeep

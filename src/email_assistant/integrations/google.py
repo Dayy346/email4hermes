@@ -82,13 +82,18 @@ def _parse_gmail_datetime(value: str | None) -> datetime:
         return datetime.now(tz=UTC)
 
 
-def _build_mime_reply(*, to_email: str, subject: str, body_text: str) -> str:
+def _build_mime_message(*, to_email: str, subject: str, body_text: str) -> str:
     msg = MimeEmailMessage()
     msg["To"] = to_email
-    msg["Subject"] = subject if subject.lower().startswith("re:") else f"Re: {subject}"
+    msg["Subject"] = subject
     msg["Date"] = format_datetime(datetime.now(tz=UTC))
     msg.set_content(body_text)
     return urlsafe_b64encode(msg.as_bytes()).decode("utf-8").rstrip("=")
+
+
+def _build_mime_reply(*, to_email: str, subject: str, body_text: str) -> str:
+    reply_subject = subject if subject.lower().startswith("re:") else f"Re: {subject}"
+    return _build_mime_message(to_email=to_email, subject=reply_subject, body_text=body_text)
 
 
 @dataclass(slots=True, frozen=True)
@@ -208,10 +213,21 @@ class GoogleGmailProvider:
     def _auth_headers(self) -> dict[str, str]:
         return {"Authorization": f"Bearer {self._access_token()}"}
 
-    def list_messages(self, *, max_results: int = 10) -> list[dict[str, object]]:
-        query = urlencode({"maxResults": str(max_results), "labelIds": "INBOX", "q": "in:inbox"})
+    def list_messages(
+        self,
+        *,
+        max_results: int = 10,
+        query: str = "in:inbox",
+    ) -> list[dict[str, object]]:
+        params = urlencode(
+            {
+                "maxResults": str(max_results),
+                "labelIds": "INBOX",
+                "q": query,
+            }
+        )
         data = _http_json(
-            f"{self.gmail_api_base}/users/me/messages?{query}",
+            f"{self.gmail_api_base}/users/me/messages?{params}",
             headers=self._auth_headers(),
         )
         messages = data.get("messages")
@@ -254,8 +270,21 @@ class GoogleGmailProvider:
             "thread_id": data.get("threadId") if isinstance(data.get("threadId"), str) else None,
         }
 
+    def send_message(self, *, to_email: str, subject: str, body_text: str) -> dict[str, object]:
+        payload: dict[str, object] = {
+            "raw": _build_mime_message(to_email=to_email, subject=subject, body_text=body_text),
+        }
+        return _http_json(
+            f"{self.gmail_api_base}/users/me/messages/send",
+            method="POST",
+            headers={**self._auth_headers(), "Content-Type": "application/json"},
+            data=json.dumps(payload).encode("utf-8"),
+        )
+
     def send_reply(self, *, thread_id: str | None, to_email: str, subject: str, body_text: str) -> dict[str, object]:
-        payload: dict[str, object] = {"raw": _build_mime_reply(to_email=to_email, subject=subject, body_text=body_text)}
+        payload: dict[str, object] = {
+            "raw": _build_mime_reply(to_email=to_email, subject=subject, body_text=body_text),
+        }
         if thread_id:
             payload["threadId"] = thread_id
         return _http_json(

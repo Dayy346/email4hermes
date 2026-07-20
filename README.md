@@ -1,94 +1,128 @@
-# Email Assistant MVP
+# Email4Hermes — Personalized Newsletter MVP
 
-A small FastAPI backend for a personal email copilot.
+FastAPI Gmail backend + Hermes skills that turn newsletter inbox mail into a personalized briefing and email it on a schedule.
 
 ## What it does
 
-- Lists recent emails from a demo inbox
-- Generates reply drafts from the selected email
-- Marks replies as sent in the demo backend
-- Creates meeting scheduling proposals
-- Is structured so Gmail + Google Calendar can be added later
+- Connects a Gmail inbox via OAuth (read + send)
+- Collects recent newsletter emails through `POST /newsletter/collect`
+- Runs a Hermes skill pipeline: collect → categorize → summarize → rank → research → personalize
+- Emails the finished briefing via `POST /newsletter/send`
+- Uses a master prompt so Hermes can fill cadence/profile and install its own cron job
 
-## Important note
+## Layout
 
-This MVP is intentionally built around **OAuth-style provider integrations** and demo in-memory services.
-That means you can wire in real Gmail/Google Calendar access later without storing passwords in the app.
-
-## Tech stack
-
-- FastAPI
-- Pydantic Settings
-- pytest
-- Uvicorn
+```text
+email4hermes/
+├── src/                 # FastAPI + Gmail provider
+├── skills/              # Hermes SKILL.md pipeline
+├── config/newsletter.yaml
+├── docs/
+│   ├── HERMES_MASTER_PROMPT.md
+│   └── HERMES_ORCHESTRATOR.md
+├── install.sh
+└── README.md
+```
 
 ## Quick start
 
+### Linux / macOS
+
 ```bash
-python -m venv .venv
+./install.sh
 source .venv/bin/activate
-pip install -e .[dev]
-cp .env.example .env
 uvicorn email_assistant.main:app --reload
 ```
 
+### Windows (PowerShell)
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -e ".[dev]"
+Copy-Item .env.example .env
+# edit .env, then:
+.\.venv\Scripts\python.exe -m uvicorn email_assistant.main:app --reload
+```
+
 Then open:
+
 - http://127.0.0.1:8000/docs
 - http://127.0.0.1:8000/health
 
-## Run tests
+## Hermes setup (important)
 
-```bash
-pytest
+1. Fill Google OAuth values in `.env` (see below).
+2. Edit `config/newsletter.yaml` (`cadence_days`, `profile`, `to_email`).
+3. Paste **[docs/HERMES_MASTER_PROMPT.md](docs/HERMES_MASTER_PROMPT.md)** into Hermes.
+4. Hermes will confirm missing fill-ins, install a recurring job every `cadence_days`, and run `skills/run-newsletter`.
+
+Full orchestrator notes: [docs/HERMES_ORCHESTRATOR.md](docs/HERMES_ORCHESTRATOR.md)
+
+## Google OAuth / env
+
+Create a Google Cloud OAuth **Web** client, enable Gmail API, set redirect URI:
+
+`http://localhost:8000/auth/google/callback`
+
+Set in `.env`:
+
+```env
+EMAIL_BACKEND=gmail
+GOOGLE_CLIENT_ID=...
+GOOGLE_CLIENT_SECRET=...
+GOOGLE_REDIRECT_URI=http://localhost:8000/auth/google/callback
+GOOGLE_REFRESH_TOKEN=...
+GOOGLE_ACCOUNT_EMAIL=you@example.com
 ```
+
+Get the refresh token:
+
+1. Start the API
+2. Open `GET /auth/google/url`
+3. Complete consent
+4. Copy `refresh_token` from `/auth/google/callback` into `.env`
+
+Deck `GMAIL_*` names map to `GOOGLE_*` in this repo (see orchestrator doc).
+
+## Suggested newsletter subscriptions
+
+Subscribe the inbox to:
+
+- [TLDR Tech](https://tldr.tech/)
+- [The Batch](https://www.deeplearning.ai/the-batch/)
+- [ByteByteGo](https://bytebytego.com/)
+- [The Pragmatic Engineer](https://newsletter.pragmaticengineer.com/)
+- [Ben's Bites](https://www.bensbites.co/)
 
 ## API
 
 - `GET /health`
-- `GET /emails`
-- `GET /emails/{email_id}`
-- `POST /emails/{email_id}/draft`
-- `POST /emails/{email_id}/send`
+- `GET /emails` / `GET /emails/{id}` / draft + send reply
 - `POST /meetings/schedule`
+- `GET /auth/google/status` / `/url` / `/callback`
+- `POST /newsletter/collect`
+- `POST /newsletter/send`
 
-## Google OAuth setup
+Set `EMAIL_BACKEND=gmail` and complete handoff fields to use the live Gmail provider; otherwise demo in-memory data is used.
 
-To connect a real Gmail account, create a Google Cloud OAuth client for a Web application and set:
+## Skills
 
-- GOOGLE_CLIENT_ID
-- GOOGLE_CLIENT_SECRET
-- GOOGLE_REDIRECT_URI=http://localhost:8000/auth/google/callback
-- GOOGLE_SCOPES=https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/calendar.events
-- GOOGLE_REFRESH_TOKEN once the account has authorized the app
-- GOOGLE_ACCOUNT_EMAIL if you want the app to display the mailbox owner explicitly
+| Skill | Role |
+|-------|------|
+| `collect-emails` | Pull + normalize inbox messages |
+| `categorize-news` | Topics + entities |
+| `summarize-news` | Structured summaries |
+| `rank-news` | Score + dedupe |
+| `research-news` | Validate top stories |
+| `personalize-newsletter` | Profile-aware briefing |
+| `run-newsletter` | Cron entrypoint + send |
 
-Useful status endpoints:
+## Tests
 
-- `GET /auth/google/status` — shows whether OAuth + handoff fields are ready
-- `GET /auth/google/url` — returns the Google authorization URL when config is present
-
-The app is currently scaffolded to generate the Google authorization URL, and it switches to the Gmail-backed provider when `EMAIL_BACKEND=gmail` and the Google handoff fields are present.
-
-## Handoff checklist
-
-Before I can manage the real mailbox, I need these values in `.env` or another secret store:
-
-1. `GOOGLE_CLIENT_ID`
-2. `GOOGLE_CLIENT_SECRET`
-3. `GOOGLE_REDIRECT_URI`
-4. `GOOGLE_REFRESH_TOKEN`
-5. `GOOGLE_ACCOUNT_EMAIL` (optional but helpful)
-6. `GOOGLE_SCOPES` if you want to customize access
-
-## Next steps for real email access
-
-Recommended production path:
-
-1. Add Google OAuth with the minimum scopes needed
-2. Store refresh tokens securely in a secrets manager
-3. Replace the in-memory provider with a Gmail adapter
-4. Add Google Calendar support for meeting creation
-5. Put human approval in front of any auto-send behavior
+```bash
+pytest
+```
 
 ## Docker
 

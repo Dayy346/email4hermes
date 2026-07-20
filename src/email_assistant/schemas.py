@@ -71,3 +71,40 @@ class ScheduleMeetingResponse(BaseModel):
     scheduled_time: datetime
     duration_minutes: int
     meeting_link: str
+
+
+class NewsletterItem(BaseModel):
+    id: str
+    sender: str
+    subject: str
+    body: str
+    links: list[str] = Field(default_factory=list)
+    received_at: datetime
+
+
+class NewsletterCollectRequest(BaseModel):
+    lookback_days: int = Field(default=3, ge=1, le=30)
+    max_results: int = Field(default=25, ge=1, le=100)
+    query: str | None = Field(
+        default=None,
+        description="Optional Gmail search query override. Defaults to inbox newer_than lookback.",
+    )
+
+
+class NewsletterCollectResponse(BaseModel):
+    items: list[NewsletterItem]
+    query: str
+    count: int
+
+
+class NewsletterSendRequest(BaseModel):
+    to_email: str
+    subject: str = "Hermes Personalized Newsletter"
+    body_text: str
+
+
+class NewsletterSendResponse(BaseModel):
+    status: Literal["sent"]
+    to_email: str
+    subject: str
+    message_id: str | None = None

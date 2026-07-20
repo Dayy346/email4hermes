@@ -3,12 +3,14 @@ from dataclasses import dataclass, field
 from email_assistant.core.config import get_settings
 from email_assistant.services.email import EmailService, GmailEmailProvider, InMemoryEmailProvider
 from email_assistant.services.meetings import MockMeetingScheduler
+from email_assistant.services.newsletter import NewsletterService
 from email_assistant.services.reply import TemplateReplyGenerator
 
 
 @dataclass(slots=True)
 class AppContainer:
     email_service: EmailService = field(default_factory=lambda: AppContainer._build_email_service())
+    newsletter_service: NewsletterService = field(default_factory=NewsletterService)
     reply_generator: TemplateReplyGenerator = field(default_factory=TemplateReplyGenerator)
     meeting_scheduler: MockMeetingScheduler = field(default_factory=MockMeetingScheduler)
 

@@ -1,0 +1,34 @@
+# Hermes Personalized Newsletter — fill these in once.
+# Hermes reads this file during setup and when the cron job runs.
+
+cadence_days: 3
+timezone: America/New_York
+
+# junior | senior | custom
+profile: junior
+custom_profile_notes: ""
+
+delivery: email
+to_email: ""
+
+# How far back to scan the newsletter inbox each run
+lookback_days: 3
+max_results: 25
+
+# Optional Gmail query override. Leave empty to use: in:inbox newer_than:{lookback_days}d
+gmail_query: ""
+
+# Suggested trusted sources to subscribe in the dedicated newsletter inbox:
+# - TLDR Tech — https://tldr.tech/
+# - The Batch (AI) — https://www.deeplearning.ai/the-batch/
+# - ByteByteGo — https://bytebytego.com/
+# - The Pragmatic Engineer — https://newsletter.pragmaticengineer.com/
+# - Ben's Bites — https://www.bensbites.co/
+sender_allowlist: []
+
+# Rank / research knobs
+top_n_research: 5
+output_dir: output
+
+# Local API used for collect + send (start with: uvicorn email_assistant.main:app --reload)
+api_base_url: http://127.0.0.1:8000
